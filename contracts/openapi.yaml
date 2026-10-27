@@ -1,0 +1,420 @@
+openapi: 3.1.1
+info:
+  title: High-Demand Booking Platform API
+  description: |
+    Booking API for high-demand events — iteration 1.
+    Scope: event creation (admin), seat hold, hold confirmation, event details.
+    Remaining seats are not exposed in this iteration (deferred to the read path, D-027).
+    No waiting room and no payment in this iteration.
+
+    Conventions:
+    - Errors follow RFC 9457 Problem Details (`application/problem+json`).
+    - Timestamps are ISO 8601 date-times in UTC.
+    - Property names use snake_case.
+    - The calling user is identified by the bearer token; user IDs are never sent in requests.
+  version: 1.2.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local development
+  - url: https://api.example.com
+    description: Production (placeholder)
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Events
+    description: Event management and details
+  - name: Holds
+    description: Temporary seat holds and their confirmation
+
+paths:
+  /v1/events:
+    post:
+      tags: [Events]
+      operationId: createEvent
+      summary: Create an event (admin)
+      description: Creates a new event. Requires the admin role.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEventRequest'
+      responses:
+        '201':
+          description: Event created.
+          headers:
+            Location:
+              description: URL of the created event.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /v1/events/{eventId}:
+    get:
+      tags: [Events]
+      operationId: getEvent
+      summary: Get event details
+      description: Returns the event details. Remaining seats are not exposed in iteration 1.
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+      responses:
+        '200':
+          description: Event details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/EventNotFound'
+
+  /v1/events/{eventId}/holds:
+    post:
+      tags: [Holds]
+      operationId: createHold
+      summary: Hold a seat
+      description: |
+        Holds one seat for the calling user on the given event (rule R3: at most one
+        active hold or one confirmed booking per user and event).
+
+        Idempotent by business key (D-023): if the user already has an active,
+        non-expired hold on this event, that hold is returned with status 200 and
+        no new seat is taken. No request body and no idempotency key are needed.
+      parameters:
+        - $ref: '#/components/parameters/EventId'
+      responses:
+        '201':
+          description: New hold created.
+          headers:
+            Location:
+              description: URL of the created hold.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hold'
+        '200':
+          description: The user already has an active hold on this event; it is returned unchanged.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hold'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/EventNotFound'
+          description: |
+            Event not found. Also returned in the short window after event creation, before its
+            stock exists (D-027); this window always ends before the sale opens.
+        '409':
+          description: |
+            Business conflict — event sold out (final), seats temporarily unavailable,
+            sale not open, or seat already booked by this user (rule R10, D-029).
+            Clients should branch on the problem `type`.
+          headers:
+            Retry-After:
+              description: |
+                Present only with `/problems/seats-temporarily-unavailable`: suggested delay in
+                seconds before retrying. A hint, not a guarantee.
+              schema:
+                type: integer
+                examples: [30]
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              examples:
+                eventSoldOut:
+                  summary: Event sold out
+                  value:
+                    type: /problems/event-sold-out
+                    title: Event sold out
+                    status: 409
+                    detail: All seats for this event are booked.
+                seatsTemporarilyUnavailable:
+                  summary: Seats temporarily unavailable
+                  value:
+                    type: /problems/seats-temporarily-unavailable
+                    title: Seats temporarily unavailable
+                    status: 409
+                    detail: All seats are currently held. Seats may be released when holds expire.
+                saleNotOpen:
+                  summary: Sale not open
+                  value:
+                    type: /problems/sale-not-open
+                    title: Sale not open
+                    status: 409
+                    detail: The sale for this event has not started yet.
+                alreadyBooked:
+                  summary: Already booked
+                  value:
+                    type: /problems/already-booked
+                    title: Already booked
+                    status: 409
+                    detail: You already have a confirmed booking for this event.
+
+  /v1/holds/{holdId}:
+    get:
+      tags: [Holds]
+      operationId: getHold
+      summary: Get a hold
+      description: |
+        Returns a hold owned by the calling user, so a client can restore its
+        countdown after a page reload.
+
+        The status reflects expires_at: a hold whose expiry time has passed is
+        returned as EXPIRED, even if the expiry job has not processed it yet.
+      parameters:
+        - $ref: '#/components/parameters/HoldId'
+      responses:
+        '200':
+          description: Hold details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hold'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/HoldNotFound'
+
+  /v1/holds/{holdId}/confirmations:
+    post:
+      tags: [Holds]
+      operationId: confirmHold
+      summary: Confirm a hold
+      description: |
+        Converts an active, non-expired hold owned by the calling user into a
+        confirmed booking (D-010).
+
+        Idempotent: confirming an already confirmed hold of the same user returns
+        200 with the same result.
+      parameters:
+        - $ref: '#/components/parameters/HoldId'
+      responses:
+        '200':
+          description: Hold confirmed (or already confirmed by the same user).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Hold'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/HoldNotFound'
+        '409':
+          description: The hold has expired.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              example:
+                type: /problems/hold-expired
+                title: Hold expired
+                status: 409
+                detail: The hold expired before it was confirmed.
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Signed token generated offline for test users and an administrator (D-007, D-030).
+        Admin endpoints require the admin role.
+
+  parameters:
+    EventId:
+      name: eventId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    HoldId:
+      name: holdId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    BadRequest:
+      description: Invalid request.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: /problems/validation-error
+            title: Invalid request
+            status: 400
+            detail: "capacity: must be greater than or equal to 1"
+    Unauthorized:
+      description: Missing or invalid token.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: /problems/unauthorized
+            title: Unauthorized
+            status: 401
+    Forbidden:
+      description: The caller does not have the required role.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: /problems/forbidden
+            title: Forbidden
+            status: 403
+    EventNotFound:
+      description: Event not found.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: /problems/event-not-found
+            title: Event not found
+            status: 404
+    HoldNotFound:
+      description: Hold not found, or it belongs to another user (the two cases are deliberately indistinguishable).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: /problems/hold-not-found
+            title: Hold not found
+            status: 404
+
+  schemas:
+    ProblemDetails:
+      type: object
+      description: RFC 9457 Problem Details.
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          format: uri-reference
+          description: Identifies the problem type; clients should branch on this value.
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+          format: uri-reference
+
+    CreateEventRequest:
+      type: object
+      additionalProperties: false
+      required: [name, capacity, sale_start_time, event_date]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+          examples: [Live Concert]
+        description:
+          type: string
+          maxLength: 2000
+          examples: [An unforgettable concert.]
+        capacity:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 1000000
+          examples: [150]
+        sale_start_time:
+          type: string
+          format: date-time
+          description: |
+            Start of the sale (UTC). Must be before event_date, and later than the current time
+            plus a server-configured margin (D-027, D-028).
+          examples: ['2026-11-14T10:00:00Z']
+        event_date:
+          type: string
+          format: date-time
+          description: Date and time of the event itself (UTC).
+          examples: ['2026-12-15T20:00:00Z']
+        hold_duration_seconds:
+          type: integer
+          format: int32
+          minimum: 60
+          maximum: 3600
+          default: 300
+          description: How long a held seat stays reserved before expiring (rule R5).
+
+    Event:
+      type: object
+      required: [id, name, capacity, sale_start_time, event_date, hold_duration_seconds, created_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        capacity:
+          type: integer
+          format: int32
+        sale_start_time:
+          type: string
+          format: date-time
+        event_date:
+          type: string
+          format: date-time
+        hold_duration_seconds:
+          type: integer
+          format: int32
+        created_at:
+          type: string
+          format: date-time
+
+    HoldStatus:
+      type: string
+      enum: [ACTIVE, CONFIRMED, EXPIRED]
+
+    Hold:
+      type: object
+      required: [id, event_id, status, expires_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+        event_id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/HoldStatus'
+        expires_at:
+          type: string
+          format: date-time
+          description: When the hold expires if not confirmed (UTC).
+        confirmed_at:
+          type: string
+          format: date-time
+          description: Present only when status is CONFIRMED.

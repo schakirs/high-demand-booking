@@ -1,0 +1,37 @@
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+pom.xml.versionsBackup
+dependency-reduced-pom.xml
+
+# Java
+*.class
+*.log
+hs_err_pid*
+replay_pid*
+
+# IDE
+.idea/
+*.iml
+*.iws
+.vscode/
+.classpath
+.project
+.settings/
+.factorypath
+bin/
+out/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local environment and secrets (signing keys, generated tokens: D-030)
+.env
+*.local.*
+*.pem
+*.key
+load-tests/tokens*.json
+
+# k6 results
+load-tests/results/

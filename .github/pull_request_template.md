@@ -20,5 +20,4 @@ Closes #
 - [ ] `./mvnw spotless:apply` applied
 - [ ] `contracts/openapi.yaml` unchanged, or the change is approved (D-021)
 - [ ] New ADR that amends or supersedes an earlier one, if a decision changed
-- [ ] French translation in `docs/fr/` updated, if a document changed
 - [ ] No invariant test (`@Tag("invariant")`) weakened, skipped or removed

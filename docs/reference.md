@@ -2,9 +2,6 @@
 
 Oct 9, 2026 · revised Oct 26, 2026 (foundation review) · @Sami
 
-> English is the source of this document. The French translation is
-> `High-Demand Booking Platform — Référence projet.md` (in the repository: `docs/fr/reference.md`).
-
 ## 1. Problem
 
 We receive massive, simultaneous booking requests for limited resources over a very short

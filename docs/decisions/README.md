@@ -9,7 +9,6 @@ options are listed only when the recorded rationale names the alternative it rej
 An accepted ADR is not rewritten. A change is a new ADR that amends (partial change) or
 supersedes (full replacement) an earlier one; only the earlier ADR's Status line is updated.
 This rule applies from the first commit of the ADRs (ticket 1).
-French translations live in `docs/fr/decisions/`; the English version is the source.
 
 | ADR | Title | Status |
 |---|---|---|

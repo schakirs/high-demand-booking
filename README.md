@@ -15,7 +15,6 @@ No waiting room, no payment, no frontend.
 | `load-tests/` | k6 scenarios |
 | `docs/reference.md` | Project reference: problem, actors, business rules, flows |
 | `docs/decisions/` | Architecture Decision Records, indexed in `docs/decisions/README.md` |
-| `docs/fr/` | French translation of `docs/` (English is the source) |
 | `CLAUDE.md` | Rules for the AI coding assistant |
 
 ## Workflow
@@ -29,7 +28,6 @@ No waiting room, no payment, no frontend.
 - Commits follow Conventional Commits with the issue number, e.g.
   `feat(inventory): hold a seat atomically (#9)`.
 - A decision that changes gets a new ADR that amends or supersedes the earlier one.
-- A document change updates its French translation in `docs/fr/` in the same PR.
 
 ## Stack
 

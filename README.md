@@ -23,6 +23,9 @@ No waiting room, no payment, no frontend.
 - Every change starts from an issue, on a short branch `<issue-number>-<short-slug>`,
   and reaches `main` through a pull request (D-018, D-019).
 - Board: Backlog → Ready → In progress (WIP 2) → In review → Done.
+- A blocked ticket stays in its column and keeps counting toward the WIP limit (standard
+  Kanban). Mark it with the `blocked` label and add a comment saying what it waits on and
+  since when. The board's "Blocked" view filters on `label:blocked`.
 - Commits follow Conventional Commits with the issue number, e.g.
   `feat(inventory): hold a seat atomically (#9)`.
 - A decision that changes gets a new ADR that amends or supersedes the earlier one.

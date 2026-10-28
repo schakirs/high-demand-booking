@@ -4,6 +4,12 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>4.1.2</version>
+  </parent>
+
   <groupId>com.schakir.hdb</groupId>
   <artifactId>backend</artifactId>
   <version>0.1.0-SNAPSHOT</version>
@@ -16,20 +22,12 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.release>25</maven.compiler.release>
-    <spring-boot.version>4.1.2</spring-boot.version>
     <spring-modulith.version>2.1.2</spring-modulith.version>
     <google-java-format.version>1.36.1</google-java-format.version>
   </properties>
 
   <dependencyManagement>
     <dependencies>
-      <dependency>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-dependencies</artifactId>
-        <version>${spring-boot.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
       <dependency>
         <groupId>org.springframework.modulith</groupId>
         <artifactId>spring-modulith-bom</artifactId>
@@ -46,7 +44,6 @@
         <plugin>
           <groupId>org.springframework.boot</groupId>
           <artifactId>spring-boot-maven-plugin</artifactId>
-          <version>${spring-boot.version}</version>
         </plugin>
         <plugin>
           <groupId>com.diffplug.spotless</groupId>

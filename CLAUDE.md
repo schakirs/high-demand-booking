@@ -131,9 +131,11 @@ Do not guess.
 
 ## Commands
 
+Maven commands run from `backend/`.
+
 ```
-docker compose up -d                   # PostgreSQL, Prometheus, Grafana
-cd backend && ./mvnw verify             # build, all tests, Modulith verification, format check
-./mvnw spotless:apply                   # format the code
-k6 run load-tests/<file>.js             # run a load scenario
+docker compose up -d          # PostgreSQL, Prometheus, Grafana
+./mvnw verify                 # build, all tests, Modulith verification, format check
+./mvnw spotless:apply         # format the code
+k6 run load-tests/<file>.js   # run a load scenario
 ```

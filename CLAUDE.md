@@ -42,10 +42,10 @@ docker-compose.yml       PostgreSQL 18, Prometheus, Grafana
 ## Architecture rules — non-negotiable
 
 1. **Modular monolith.** Every deployable has its own root package: `com.schakir.hdb.<deployable>`
-   (D-032). The monolith's deployable is `core`; its modules are `event`, `user`, `inventory`, `booking`,
-   under `com.schakir.hdb.core.<module>`. A module's public API is its top-level package; everything in
-   sub-packages is internal. Never use another module's internal types.
-   The Spring Modulith verification test must always pass.
+   (D-032). The monolith's deployable is `core`; its modules are `event`, `user`, `inventory`,
+   `booking`, under `com.schakir.hdb.core.<module>`. A module's public API is its top-level package;
+   everything in sub-packages is internal. Never use another module's internal types. The Spring
+   Modulith verification test must always pass.
 2. **Dependencies (D-027).** Allowed: `event → inventory` (stock creation only) and
    `booking → inventory` (calls). `inventory` never calls nor listens to another module.
    Nothing depends on `booking`. `user` only validates tokens; the current user comes from the

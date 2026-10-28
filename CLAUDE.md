@@ -31,7 +31,8 @@ Testcontainers · k6 · Prometheus + Grafana · google-java-format (Spotless)
 
 ```
 contracts/openapi.yaml   API source of truth (OpenAPI 3.1.1)
-backend/                 modular monolith (Spring Boot)
+backend/                 Maven root (backend/pom.xml, backend/mvnw, backend/.mvn/)
+backend/core             modular monolith (Spring Boot, Spring Modulith)
 load-tests/              k6 scenarios
 docs/reference.md        project reference: problem, business rules, flows
 docs/decisions/          ADRs
@@ -40,10 +41,11 @@ docker-compose.yml       PostgreSQL 18, Prometheus, Grafana
 
 ## Architecture rules — non-negotiable
 
-1. **Modular monolith.** Modules: `event`, `user`, `inventory`, `booking`, under
-   `com.schakir.booking.<module>`. A module's public API is its top-level package; everything in
-   sub-packages is internal. Never use another module's internal types.
-   The Spring Modulith verification test must always pass.
+1. **Modular monolith.** Every deployable has its own root package: `com.schakir.hdb.<deployable>`
+   (D-032). The monolith's deployable is `core`; its modules are `event`, `user`, `inventory`,
+   `booking`, under `com.schakir.hdb.core.<module>`. A module's public API is its top-level package;
+   everything in sub-packages is internal. Never use another module's internal types. The Spring
+   Modulith verification test must always pass.
 2. **Dependencies (D-027).** Allowed: `event → inventory` (stock creation only) and
    `booking → inventory` (calls). `inventory` never calls nor listens to another module.
    Nothing depends on `booking`. `user` only validates tokens; the current user comes from the
@@ -128,6 +130,8 @@ Do not guess.
   explanation of what changed in each file.
 
 ## Commands
+
+Maven commands run from `backend/`.
 
 ```
 docker compose up -d          # PostgreSQL, Prometheus, Grafana

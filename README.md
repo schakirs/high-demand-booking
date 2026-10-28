@@ -11,7 +11,7 @@ No waiting room, no payment, no frontend.
 | Path | Content |
 |---|---|
 | `contracts/openapi.yaml` | API source of truth (OpenAPI 3.1.1) |
-| `backend/` | Modular monolith (Spring Boot, Spring Modulith) |
+| `backend/` | Maven root; `backend/core` is the modular monolith (Spring Boot, Spring Modulith) |
 | `load-tests/` | k6 scenarios |
 | `docs/reference.md` | Project reference: problem, actors, business rules, flows |
 | `docs/decisions/` | Architecture Decision Records, indexed in `docs/decisions/README.md` |

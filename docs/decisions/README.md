@@ -43,3 +43,4 @@ This rule applies from the first commit of the ADRs (ticket 1).
 | [0029](0029-distinguish-sold-out-from-temporarily-unavailable.md) | Distinguish "sold out" from "temporarily unavailable" from iteration 1 | Accepted |
 | [0030](0030-simulated-identity.md) | Simulated identity with locally signed bearer tokens | Accepted |
 | [0031](0031-hold-expiry-by-inventory-sweep.md) | Hold expiry by a periodic sweep owned by inventory | Accepted |
+| [0032](0032-backend-layout-one-maven-module-per-deployable.md) | Backend layout: one Maven reactor in backend/, one module and one root package per deployable | Accepted |

@@ -21,6 +21,8 @@ class ModularityViolationGuardTest {
     ApplicationModules modules =
         ApplicationModules.of("com.schakir.hdb.fixtures.violation", location -> true);
 
-    assertThatThrownBy(modules::verify).isInstanceOf(Violations.class);
+    assertThatThrownBy(modules::verify)
+        .isInstanceOf(Violations.class)
+        .hasMessageContaining("moduleb.internal");
   }
 }

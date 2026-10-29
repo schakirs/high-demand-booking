@@ -10,7 +10,10 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      # 18+ images store PGDATA in a version-specific subdirectory under a single mount
+      # at /var/lib/postgresql (not .../data as in earlier major versions): supports
+      # "pg_upgrade --link" across major versions without a mount-point boundary.
+      - pgdata:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U hdb_app -d hdb"]
       interval: 5s

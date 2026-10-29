@@ -2,7 +2,7 @@ services:
   postgres:
     image: postgres:18.6
     environment:
-      # Local-only credentials (D-030 scope: not a real secret). Override in a real
+      # Local-only credentials (local only, not a real secret). Override in a real
       # environment via POSTGRES_USER/POSTGRES_PASSWORD/POSTGRES_DB.
       POSTGRES_USER: hdb_app
       POSTGRES_PASSWORD: hdb_app

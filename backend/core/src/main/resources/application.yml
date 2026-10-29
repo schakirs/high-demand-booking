@@ -16,6 +16,8 @@ spring:
       # HikariCP's own hard floor (SOFT_TIMEOUT_FLOOR=250ms; below it the setter throws
       # IllegalArgumentException at startup). Without a waiting room yet, this is the only
       # back-pressure: fail fast (D-002) instead of queueing for the 30s default.
+      # Plain milliseconds, not "250ms": this binds onto HikariConfig's primitive long
+      # setter, and Duration-style suffixes only convert onto java.time.Duration fields.
       connection-timeout: 250
       # Fixes the session's time zone so now() is unambiguous, independent of the JVM's
       # default zone (D-028: times are Instant in Java, timestamptz in PostgreSQL).

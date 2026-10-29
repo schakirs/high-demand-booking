@@ -10,8 +10,8 @@ D-022's consequence: with virtual threads, the connection pool becomes the limit
 protected explicitly. Every hold of an event updates the same stock row (D-010, D-016), so
 more connections do not raise that row's throughput — they only move the queue from the JVM
 into PostgreSQL's own lock waiters. The success criterion is a hold confirmed in under 100 ms
-at p99 (docs/reference.md, section 1). Without a waiting room in iteration 1 (D-005 is
-MVP-wide, not iteration-1 scope), the connection pool's timeout is the only back-pressure a
+at p99 (docs/reference.md, section 1). Without a waiting room in iteration 1 (the waiting room
+(D-005) is out of iteration 1 scope), the connection pool's timeout is the only back-pressure a
 request meets before reaching the database.
 
 ## Options considered
@@ -33,12 +33,7 @@ and `setConnectionTimeout`/`setValidationTimeout` throw `IllegalArgumentExceptio
 value from 1 to 249 ms (confirmed by reading `HikariConfig.java` at tag `HikariCP-7.0.2`; 0 is
 special-cased to mean "no timeout"). Below the floor the application fails to start rather
 than silently falling back to the 30 s default — misconfiguring this value is itself caught
-fast. The property is written as a plain millisecond integer (`250`, not `250ms`): Spring
-binds `spring.datasource.hikari.*` directly onto `HikariConfig`'s setters by reflection, and
-`connectionTimeout` is a primitive `long`; a `"250ms"` string fails that binding with a
-`ConversionFailedException`/`NumberFormatException` (verified directly against Spring's
-`Binder`, not assumed) — Duration-style suffixes only convert onto `java.time.Duration`-typed
-properties, which this is not.
+fast.
 
 ## Consequences
 

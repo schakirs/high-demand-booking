@@ -37,6 +37,7 @@ load-tests/              k6 scenarios
 docs/reference.md        project reference: problem, business rules, flows
 docs/decisions/          ADRs
 docker-compose.yml       PostgreSQL 18, Prometheus, Grafana
+observability/           Prometheus scrape config, Grafana datasource provisioning
 ```
 
 ## Architecture rules — non-negotiable
@@ -45,7 +46,11 @@ docker-compose.yml       PostgreSQL 18, Prometheus, Grafana
    (D-032). The monolith's deployable is `core`; its modules are `event`, `user`, `inventory`,
    `booking`, under `com.schakir.hdb.core.<module>`. A module's public API is its top-level package;
    everything in sub-packages is internal. Never use another module's internal types. The Spring
-   Modulith verification test must always pass.
+   Modulith verification test must always pass. A module that owns data has its own PostgreSQL
+   schema, named after the module (D-033): SQL always schema-qualifies table names
+   (`inventory.stock`), never relies on `search_path`, and a module never reads or writes another
+   module's schema. A module's migrations live in `db/migration/<module>/` (Spring Modulith's
+   module-specific Flyway support, D-033).
 2. **Dependencies (D-027).** Allowed: `event → inventory` (stock creation only) and
    `booking → inventory` (calls). `inventory` never calls nor listens to another module.
    Nothing depends on `booking`. `user` only validates tokens; the current user comes from the
@@ -86,6 +91,7 @@ docker-compose.yml       PostgreSQL 18, Prometheus, Grafana
 - Add or upgrade a dependency.
 - Change the database schema other than by a new Flyway migration.
   Never edit a migration that has already been applied.
+- Change the connection pool settings (D-034).
 - Modify anything under `docs/` (reference, ADRs) or this file.
   Never rewrite the body of an accepted ADR: propose a new ADR that amends or supersedes it.
 - Disable a test, lower an assertion, or catch and ignore an exception to make a build pass.

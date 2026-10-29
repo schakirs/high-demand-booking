@@ -1,9 +1,40 @@
 spring:
   application:
     name: core
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/hdb}
+    username: ${DB_USER:hdb_app}
+    password: ${DB_PASSWORD:hdb_app}
+    hikari:
+      # Fixed-size pool (D-034): every hold updates the same stock row, so more
+      # connections would not raise throughput, only move the queue into PostgreSQL.
+      maximum-pool-size: 10
+      minimum-idle: 10
+      # HikariCP's own hard floor (SOFT_TIMEOUT_FLOOR=250ms; below it the setter throws
+      # IllegalArgumentException at startup). Without a waiting room yet, this is the only
+      # back-pressure: fail fast (D-002) instead of queueing for the 30s default.
+      # Plain milliseconds, not "250ms": this binds onto HikariConfig's primitive long
+      # setter, and Duration-style suffixes only convert onto java.time.Duration fields.
+      connection-timeout: 250
+      # now() already returns a timestamptz (an instant, independent of time zone); the
+      # session time zone only affects text rendering and casts to timestamp without time
+      # zone. Fixing it to UTC keeps logs and ad-hoc queries consistent (D-028).
+      connection-init-sql: SET TIME ZONE 'UTC'
+  modulith:
+    runtime:
+      flyway-enabled: true
 
 management:
   endpoints:
     web:
       exposure:
-        include: health
+        include: health, prometheus
+  endpoint:
+    health:
+      # Shows the status of each health component (e.g. db) without exposing the
+      # per-component "details" (validation query, disk paths): show-details stays at
+      # its "never" default.
+      show-components: always

@@ -35,14 +35,6 @@ all schemas; the boundary is a convention enforced in code (Spring Modulith), no
 PostgreSQL grants. Spring Modulith's `event_publication` table is infrastructure, not a
 module's data, and its root migration (`db/migration/__root`) arrives with #7.
 
-Spring Modulith's module-specific Flyway support customizes only the migration **location**
-and the history **table name** per module; it does not set a `schemas`/`defaultSchema` per
-module (read directly from `SpringModulithFlywayMigrationStrategy` at tag `2.1.2`). With
-`spring.flyway.schemas` left unset, every history table — the root's `flyway_schema_history`
-and each module's `flyway_schema_history_<module>` — lands in the one schema Flyway defaults
-to, `public`. Putting a module's history table inside that module's own schema would need
-custom Flyway configuration beyond what this framework version offers; not done here.
-
 ## Consequences
 
 - Module boundaries are visible in `information_schema.schemata`.

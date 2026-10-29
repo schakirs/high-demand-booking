@@ -19,8 +19,9 @@ spring:
       # Plain milliseconds, not "250ms": this binds onto HikariConfig's primitive long
       # setter, and Duration-style suffixes only convert onto java.time.Duration fields.
       connection-timeout: 250
-      # Fixes the session's time zone so now() is unambiguous, independent of the JVM's
-      # default zone (D-028: times are Instant in Java, timestamptz in PostgreSQL).
+      # now() already returns a timestamptz (an instant, independent of time zone); the
+      # session time zone only affects text rendering and casts to timestamp without time
+      # zone. Fixing it to UTC keeps logs and ad-hoc queries consistent (D-028).
       connection-init-sql: SET TIME ZONE 'UTC'
   modulith:
     runtime:

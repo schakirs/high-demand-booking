@@ -17,6 +17,19 @@ No waiting room, no payment, no frontend.
 | `docs/decisions/` | Architecture Decision Records, indexed in `docs/decisions/README.md` |
 | `CLAUDE.md` | Rules for the AI coding assistant |
 
+## Running locally
+
+```
+docker compose up -d                  # PostgreSQL 18, Prometheus, Grafana
+cd backend && ./mvnw spring-boot:run  # starts the app on :8080, against the compose Postgres
+```
+
+Flyway runs its migrations at startup. Prometheus scrapes the app at
+`host.docker.internal:8080/actuator/prometheus` (http://localhost:9090/targets to check it's
+UP); Grafana is at http://localhost:3000 (its Prometheus datasource is provisioned, no
+dashboards yet). `./mvnw verify` (from `backend/`) starts its own PostgreSQL via Testcontainers
+and does not need `docker compose up -d` to be running first.
+
 ## Workflow
 
 - Every change starts from an issue, on a short branch `<issue-number>-<short-slug>`,

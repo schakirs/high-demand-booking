@@ -46,3 +46,4 @@ This rule applies from the first commit of the ADRs (ticket 1).
 | [0032](0032-backend-layout-one-maven-module-per-deployable.md) | Backend layout: one Maven reactor in backend/, one module and one root package per deployable | Accepted |
 | [0033](0033-one-schema-per-module.md) | One PostgreSQL schema per module | Accepted |
 | [0034](0034-small-connection-pool-that-fails-fast.md) | Small connection pool that fails fast | Accepted |
+| [0035](0035-ci-as-a-strict-required-check-on-every-pull-request.md) | CI as a strict required check on every pull request | Accepted |

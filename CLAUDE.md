@@ -92,6 +92,7 @@ observability/           Prometheus scrape config, Grafana datasource provisioni
 - Change the database schema other than by a new Flyway migration.
   Never edit a migration that has already been applied.
 - Change the connection pool settings (D-034).
+- Change `.github/workflows/` or the pinned action versions.
 - Modify anything under `docs/` (reference, ADRs) or this file.
   Never rewrite the body of an accepted ADR: propose a new ADR that amends or supersedes it.
 - Disable a test, lower an assertion, or catch and ignore an exception to make a build pass.

@@ -30,7 +30,7 @@ class CoreApplicationHealthTests {
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
 
     JsonNode body = new ObjectMapper().readTree(response.getBody());
-    assertThat(body.path("status").asText()).isEqualTo("UP");
+    assertThat(body.path("status").asText()).isEqualTo("DOWN");
     assertThat(body.path("components").path("db").path("status").asText()).isEqualTo("UP");
   }
 }

@@ -4,6 +4,16 @@ spring:
   threads:
     virtual:
       enabled: true
+  jackson:
+    # snake_case JSON properties, strict unknown-property rejection (D-002, D-025): a typo
+    # such as hold_duration_secs must not silently fall back to a default.
+    property-naming-strategy: SNAKE_CASE
+    deserialization:
+      fail-on-unknown-properties: true
+    # An absent optional field (e.g. ProblemDetails.instance) must be omitted, not sent as a
+    # JSON null: nullable optional fields in the contract are typed (e.g. string), and null
+    # would violate that type.
+    default-property-inclusion: non_null
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/hdb}
     username: ${DB_USER:hdb_app}

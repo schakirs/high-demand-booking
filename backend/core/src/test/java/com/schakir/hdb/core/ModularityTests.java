@@ -18,7 +18,7 @@ class ModularityTests {
   }
 
   @Test
-  void detectsTheFourModules() {
+  void detectsTheFiveModules() {
     ApplicationModules modules = ApplicationModules.of(CoreApplication.class);
 
     Set<String> names =
@@ -26,6 +26,6 @@ class ModularityTests {
             .map(module -> module.getIdentifier().toString())
             .collect(Collectors.toSet());
 
-    assertThat(names).containsExactlyInAnyOrder("event", "user", "inventory", "booking");
+    assertThat(names).containsExactlyInAnyOrder("event", "user", "inventory", "booking", "web");
   }
 }

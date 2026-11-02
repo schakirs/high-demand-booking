@@ -31,6 +31,10 @@
       <artifactId>spring-modulith-runtime</artifactId>
       <scope>runtime</scope>
     </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-validation</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -85,6 +89,15 @@
       <artifactId>awaitility</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <!-- Validates problem-detail responses against components.schemas.ProblemDetails,
+           loaded live from contracts/openapi.yaml (JSON Schema 2020-12, D-021). Uses
+           Jackson 3 (tools.jackson), not Jackson 2: no clash with Boot 4's Jackson 3. -->
+      <groupId>com.networknt</groupId>
+      <artifactId>json-schema-validator</artifactId>
+      <version>3.0.8</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -92,6 +105,90 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+      <!-- Generates the API interfaces and models from contracts/openapi.yaml, one
+           execution per tag, into the module that owns the resource (D-021, D-025,
+           D-027, D-036). Output is never committed; a contract change regenerates on
+           build. Shared settings live here, at the plugin level (Maven merges this into
+           each execution's own configuration); each execution below keeps only what
+           actually differs between tags: the packages and the apis/models filter.
+           useTags=true is required: without it the generator groups operations by the
+           first path segment of the path, not by tag, and every operation in this
+           contract starts with /v1/. date-time has no dateLibrary value that maps to
+           Instant, hence the typeMapping/importMapping pair. ProblemDetails is
+           schema-mapped to Spring's own ProblemDetail (ADR 0037): excluding it from
+           modelsToGenerate alone still leaves a dangling, non-compiling import in the
+           generated API interfaces. -->
+      <plugin>
+        <groupId>org.openapitools</groupId>
+        <artifactId>openapi-generator-maven-plugin</artifactId>
+        <configuration>
+          <inputSpec>${project.basedir}/../../contracts/openapi.yaml</inputSpec>
+          <generatorName>spring</generatorName>
+          <generateApiTests>false</generateApiTests>
+          <generateModelTests>false</generateModelTests>
+          <generateApiDocumentation>false</generateApiDocumentation>
+          <generateModelDocumentation>false</generateModelDocumentation>
+          <generateSupportingFiles>false</generateSupportingFiles>
+          <typeMappings>
+            <typeMapping>DateTime=Instant</typeMapping>
+          </typeMappings>
+          <importMappings>
+            <importMapping>Instant=java.time.Instant</importMapping>
+          </importMappings>
+          <schemaMappings>
+            <schemaMapping>ProblemDetails=org.springframework.http.ProblemDetail</schemaMapping>
+          </schemaMappings>
+          <configOptions>
+            <useTags>true</useTags>
+            <interfaceOnly>true</interfaceOnly>
+            <skipDefaultInterface>true</skipDefaultInterface>
+            <useSpringBoot4>true</useSpringBoot4>
+            <useJackson3>true</useJackson3>
+            <useBeanValidation>true</useBeanValidation>
+            <openApiNullable>false</openApiNullable>
+            <annotationLibrary>none</annotationLibrary>
+            <documentationProvider>none</documentationProvider>
+            <dateLibrary>java8</dateLibrary>
+            <!-- An explicit JSON null on an optional, non-nullable field (e.g.
+                 hold_duration_seconds, typed integer, not nullable) must be rejected,
+                 not silently applied over the field's default (D-002): FAIL, not the
+                 SKIP default. generateJsonIncludeAnnotations is set explicitly (false:
+                 the global ObjectMapper owns inclusion, see application.yml) only to
+                 silence the generator's own warning about its unset default. -->
+            <generateJsonSetterNullsAnnotations>true</generateJsonSetterNullsAnnotations>
+            <optionalNonNullPropertyJsonSetterNulls>FAIL</optionalNonNullPropertyJsonSetterNulls>
+            <generateJsonIncludeAnnotations>false</generateJsonIncludeAnnotations>
+          </configOptions>
+        </configuration>
+        <executions>
+          <execution>
+            <id>generate-events-api</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <apiPackage>com.schakir.hdb.core.event.api</apiPackage>
+              <modelPackage>com.schakir.hdb.core.event.api.model</modelPackage>
+              <apisToGenerate>Events</apisToGenerate>
+              <modelsToGenerate>CreateEventRequest,Event</modelsToGenerate>
+            </configuration>
+          </execution>
+          <execution>
+            <id>generate-holds-api</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <apiPackage>com.schakir.hdb.core.booking.api</apiPackage>
+              <modelPackage>com.schakir.hdb.core.booking.api.model</modelPackage>
+              <apisToGenerate>Holds</apisToGenerate>
+              <modelsToGenerate>Hold,HoldStatus</modelsToGenerate>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

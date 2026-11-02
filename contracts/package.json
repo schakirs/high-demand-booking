@@ -1,0 +1,11 @@
+{
+  "name": "hdb-contracts",
+  "private": true,
+  "description": "Lint-only tooling for the OpenAPI contract (D-021, D-025). No runtime code.",
+  "scripts": {
+    "lint": "redocly lint openapi.yaml"
+  },
+  "devDependencies": {
+    "@redocly/cli": "2.72.1"
+  }
+}

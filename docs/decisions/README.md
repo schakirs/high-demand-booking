@@ -47,3 +47,5 @@ This rule applies from the first commit of the ADRs (ticket 1).
 | [0033](0033-one-schema-per-module.md) | One PostgreSQL schema per module | Accepted |
 | [0034](0034-small-connection-pool-that-fails-fast.md) | Small connection pool that fails fast | Accepted |
 | [0035](0035-ci-as-a-strict-required-check-on-every-pull-request.md) | CI as a strict required check on every pull request | Accepted |
+| [0036](0036-contract-first-toolchain.md) | Contract-first toolchain: generated interfaces per module and Redocly lint | Accepted |
+| [0037](0037-error-responses-shared-handler.md) | Error responses: shared technical handler, business problems per module | Accepted |

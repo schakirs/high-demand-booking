@@ -35,3 +35,7 @@ load-tests/tokens*.json
 
 # k6 results
 load-tests/results/
+
+# Node (contract lint tooling only, D-021/D-025)
+contracts/node/
+contracts/node_modules/

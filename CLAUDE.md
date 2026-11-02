@@ -31,6 +31,8 @@ Testcontainers · k6 · Prometheus + Grafana · google-java-format (Spotless)
 
 ```
 contracts/openapi.yaml   API source of truth (OpenAPI 3.1.1)
+contracts/redocly.yaml   Redocly lint config (recommended ruleset + project rules, D-036)
+contracts/package.json   pins @redocly/cli; package-lock.json committed
 backend/                 Maven root (backend/pom.xml, backend/mvnw, backend/.mvn/)
 backend/core             modular monolith (Spring Boot, Spring Modulith)
 load-tests/              k6 scenarios
@@ -39,6 +41,10 @@ docs/decisions/          ADRs
 docker-compose.yml       PostgreSQL 18, Prometheus, Grafana
 observability/           Prometheus scrape config, Grafana datasource provisioning
 ```
+
+The API interfaces and models are generated from `contracts/openapi.yaml` at build time
+(D-036), into `backend/core/target/generated-sources/openapi/...`, never committed. A
+contract change regenerates them on the next build.
 
 ## Architecture rules — non-negotiable
 
@@ -57,6 +63,10 @@ observability/           Prometheus scrape config, Grafana datasource provisioni
    security context. No cycles. `event` creates the stock from its own `EventCreated`
    (after-commit listener) through the idempotent
    `inventory.createStock(eventId, capacity, opensAt, holdDuration)`.
+   The `web` module (shared HTTP/problem-details plumbing, D-037) depends on no other module;
+   `event` and `booking` may depend on it; `inventory` never does — `inventory` is declared
+   `@ApplicationModule(allowedDependencies = {})`, so the Modulith verification test rejects
+   any dependency it might grow, on `web` or anything else.
 3. **No transaction spans two modules.** Cross-module effects go through events published
    with the Spring Modulith event publication registry (transactional outbox, D-013).
 4. **Inventory is the single source of truth** for seats and holds (D-010).
@@ -83,6 +93,14 @@ observability/           Prometheus scrape config, Grafana datasource provisioni
    generated from `contracts/openapi.yaml`. Never add an endpoint, field, header or problem
    type that is not in the contract. Errors use RFC 9457 Problem Details with
    `type: /problems/<kebab-case-name>`.
+9. **Error handling (D-037).** `web`'s `TechnicalProblemHandler` (lowest precedence) turns
+   validation failures, malformed requests and an unknown JSON property into
+   `400 /problems/validation-error`, and any other unhandled exception into
+   `500 about:blank` (logged at ERROR with its stack trace, nothing technical in the body).
+   Each module adds its own `@RestControllerAdvice` for its business problems, ordered ahead
+   of the shared one. Build every problem response with `ProblemDetailFactory` — never
+   `ResponseEntity.body(problemDetail)` directly, since Spring MVC fills a null `instance` with
+   the request URI otherwise.
 
 ## Never do without explicit approval
 
@@ -103,7 +121,9 @@ Do not guess.
 
 ## Conventions
 
-- JSON properties in snake_case (global Jackson configuration).
+- JSON properties in snake_case (global Jackson configuration). An absent optional field is
+  omitted, never sent as a JSON `null` (`spring.jackson.default-property-inclusion: non_null`):
+  a nullable field would otherwise violate its own typed schema.
 - Times: `Instant` in Java, `timestamptz` in PostgreSQL, ISO 8601 UTC in the API.
 - Identifiers: UUID.
 - Logs: structured JSON, with a correlation ID on every request.
@@ -145,4 +165,9 @@ docker compose up -d          # PostgreSQL, Prometheus, Grafana
 ./mvnw verify                 # build, all tests, Modulith verification, format check
 ./mvnw spotless:apply         # format the code
 k6 run load-tests/<file>.js   # run a load scenario
+```
+
+To lint the contract alone, without the rest of the build, run from `contracts/`:
+```
+npm ci --ignore-scripts && npm run lint
 ```

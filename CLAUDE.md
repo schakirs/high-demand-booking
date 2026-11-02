@@ -98,10 +98,9 @@ contract change regenerates them on the next build.
    `400 /problems/validation-error`, and any other unhandled exception into
    `500 about:blank` (logged at ERROR with its stack trace, nothing technical in the body).
    Each module adds its own `@RestControllerAdvice` for its business problems, ordered ahead
-   of the shared one. Build every problem through `ProblemDetailFactory`, and always return it
-   via `ProblemDetailFactory.asResponseBody(...)`, never `ResponseEntity.body(problemDetail)`
-   directly: Spring MVC auto-fills a null `instance` with the request URI otherwise, which must
-   never happen here (correlation ids are #13, not yet implemented).
+   of the shared one. Build every problem response with `ProblemDetailFactory` — never
+   `ResponseEntity.body(problemDetail)` directly, since Spring MVC fills a null `instance` with
+   the request URI otherwise.
 
 ## Never do without explicit approval
 
@@ -122,7 +121,9 @@ Do not guess.
 
 ## Conventions
 
-- JSON properties in snake_case (global Jackson configuration).
+- JSON properties in snake_case (global Jackson configuration). An absent optional field is
+  omitted, never sent as a JSON `null` (`spring.jackson.default-property-inclusion: non_null`):
+  a nullable field would otherwise violate its own typed schema.
 - Times: `Instant` in Java, `timestamptz` in PostgreSQL, ISO 8601 UTC in the API.
 - Identifiers: UUID.
 - Logs: structured JSON, with a correlation ID on every request.

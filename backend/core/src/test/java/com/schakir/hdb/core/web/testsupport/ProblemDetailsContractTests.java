@@ -1,6 +1,7 @@
 package com.schakir.hdb.core.web.testsupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -52,9 +53,23 @@ class ProblemDetailsContractTests {
     File contractFile = new File("../../contracts/openapi.yaml");
     JsonNode contract = new YAMLMapper().readTree(contractFile);
     JsonNode schemaNode = contract.at("/components/schemas/ProblemDetails");
+    assertThat(schemaNode.isMissingNode())
+        .as("components.schemas.ProblemDetails must exist in contracts/openapi.yaml")
+        .isFalse();
 
     SchemaRegistry registry = SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12);
     problemDetailsSchema = registry.getSchema(schemaNode);
+  }
+
+  @Test
+  void theLoadedSchemaActuallyRejectsAnInvalidBody() {
+    JsonNode missingType = new ObjectMapper().readTree("{\"title\":\"x\",\"status\":400}");
+    assertThat(problemDetailsSchema.validate(missingType)).isNotEmpty();
+
+    JsonNode wrongStatusType =
+        new ObjectMapper()
+            .readTree("{\"type\":\"/problems/x\",\"title\":\"x\",\"status\":\"400\"}");
+    assertThat(problemDetailsSchema.validate(wrongStatusType)).isNotEmpty();
   }
 
   @BeforeEach
@@ -158,6 +173,34 @@ class ProblemDetailsContractTests {
     } finally {
       MDC.remove(CorrelationId.MDC_KEY);
     }
+  }
+
+  @Test
+  void missingRequestParameterGetsAnExplicitTypeAndNoInstance() throws Exception {
+    mockMvc
+        .perform(get("/test-only/samples/by-name"))
+        .andExpect(status().isBadRequest())
+        .andExpect(content().contentType("application/problem+json"))
+        .andExpect(
+            result ->
+                assertType(result.getResponse().getContentAsString(), "/problems/validation-error"))
+        .andExpect(result -> assertNoInstance(result.getResponse().getContentAsString()))
+        .andExpect(
+            result ->
+                assertValidAgainstProblemDetailsSchema(result.getResponse().getContentAsString()));
+  }
+
+  @Test
+  void rawResponseStatusExceptionGetsAnExplicitTypeAndNoInstance() throws Exception {
+    mockMvc
+        .perform(get("/test-only/samples/conflict"))
+        .andExpect(status().isConflict())
+        .andExpect(content().contentType("application/problem+json"))
+        .andExpect(result -> assertType(result.getResponse().getContentAsString(), "about:blank"))
+        .andExpect(result -> assertNoInstance(result.getResponse().getContentAsString()))
+        .andExpect(
+            result ->
+                assertValidAgainstProblemDetailsSchema(result.getResponse().getContentAsString()));
   }
 
   private static void assertType(String body, String expected) {

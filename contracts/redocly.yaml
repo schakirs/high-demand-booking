@@ -1,0 +1,101 @@
+extends:
+  - recommended
+
+rules:
+  # 1. Schema property names are snake_case (global Jackson configuration, D-025).
+  rule/schema-properties-snake-case:
+    subject:
+      type: SchemaProperties
+    assertions:
+      casing: snake_case
+    message: Schema property names must be snake_case.
+
+  # 2. Every 4xx response uses application/problem+json with the ProblemDetails schema (RFC 9457, D-021).
+  rule/problem-json-content-type:
+    subject:
+      type: MediaTypesMap
+    where:
+      - subject:
+          type: Response
+          matchParentKeys: /^4\d{2}$/
+        assertions:
+          defined: true
+    assertions:
+      required:
+        - application/problem+json
+    message: Every 4xx response must declare an application/problem+json content type.
+
+  rule/problem-json-schema:
+    subject:
+      type: MediaType
+      property: schema
+    where:
+      - subject:
+          type: Response
+          matchParentKeys: /^4\d{2}$/
+        assertions:
+          defined: true
+      - subject:
+          type: MediaType
+          matchParentKeys: /^application\/problem\+json$/
+        assertions:
+          defined: true
+    assertions:
+      ref: /#\/components\/schemas\/ProblemDetails$/
+    message: Every 4xx application/problem+json response must use the ProblemDetails schema.
+
+  # 3. Problem `type` values in examples match /problems/<kebab-case-name> (D-021).
+  rule/problem-type-pattern-in-example:
+    subject:
+      type: MediaType
+      property: example
+    where:
+      - subject:
+          type: Response
+          matchParentKeys: /^4\d{2}$/
+        assertions:
+          defined: true
+    assertions:
+      schema:
+        type: object
+        additionalProperties: true
+        properties:
+          type:
+            type: string
+            pattern: ^/problems/[a-z0-9]+(-[a-z0-9]+)*$
+        required: [type]
+    message: A problem `type` example must match /problems/<kebab-case-name>.
+
+  rule/problem-type-pattern-in-examples:
+    subject:
+      type: Example
+      property: value
+    assertions:
+      schema:
+        type: object
+        additionalProperties: true
+        properties:
+          type:
+            type: string
+            pattern: ^/problems/[a-z0-9]+(-[a-z0-9]+)*$
+        required: [type]
+    message: A problem `type` example must match /problems/<kebab-case-name>.
+
+  # 4. Every path starts with /v1/ (D-021: version in the URL).
+  rule/path-starts-with-v1:
+    subject:
+      type: Paths
+    assertions:
+      pattern: /^\/v1\//
+    message: Every path must start with /v1/.
+
+  # 5. Every operation declares a 401 response (every operation is covered by the contract's
+  #    single, global security requirement; see ADR 0036 for the limitation this simplification
+  #    accepts).
+  rule/operation-declares-401:
+    subject:
+      type: Responses
+    assertions:
+      required:
+        - '401'
+    message: Every operation must declare a 401 response.

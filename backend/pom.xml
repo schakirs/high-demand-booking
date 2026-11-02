@@ -23,6 +23,9 @@
     <java.version>25</java.version>
     <spring-modulith.version>2.1.2</spring-modulith.version>
     <google-java-format.version>1.36.1</google-java-format.version>
+    <!-- Pinned Node LTS used only to lint the contract (Redocly CLI); never installed
+         globally, downloaded fresh into contracts/node by the frontend-maven-plugin. -->
+    <node.version>v26.13.0</node.version>
   </properties>
 
   <dependencyManagement>
@@ -65,12 +68,62 @@
             </execution>
           </executions>
         </plugin>
+        <!-- Generates the API interfaces and models from contracts/openapi.yaml (D-021,
+             D-025); each module binds its own executions (ticket #5). -->
+        <plugin>
+          <groupId>org.openapitools</groupId>
+          <artifactId>openapi-generator-maven-plugin</artifactId>
+          <version>7.27.0</version>
+        </plugin>
       </plugins>
     </pluginManagement>
     <plugins>
       <plugin>
         <groupId>com.diffplug.spotless</groupId>
         <artifactId>spotless-maven-plugin</artifactId>
+      </plugin>
+      <!-- Lints the contract with Redocly before any module generates code from it (D-021,
+           D-025): a broken contract fails the build early. Node/npm are downloaded fresh
+           into contracts/node, never installed globally or committed. -->
+      <plugin>
+        <groupId>com.github.eirslett</groupId>
+        <artifactId>frontend-maven-plugin</artifactId>
+        <version>2.0.2</version>
+        <configuration>
+          <workingDirectory>${project.basedir}/../contracts</workingDirectory>
+        </configuration>
+        <executions>
+          <execution>
+            <id>install-node-and-npm</id>
+            <goals>
+              <goal>install-node-and-npm</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <nodeVersion>${node.version}</nodeVersion>
+            </configuration>
+          </execution>
+          <execution>
+            <id>npm-ci</id>
+            <goals>
+              <goal>npm</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <arguments>ci --ignore-scripts</arguments>
+            </configuration>
+          </execution>
+          <execution>
+            <id>redocly-lint</id>
+            <goals>
+              <goal>npm</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <arguments>run lint</arguments>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

@@ -2,6 +2,11 @@ extends:
   - recommended
 
 rules:
+  # This is a learning project, not a published API product: no license to declare.
+  info-license: off
+  # http://localhost:8080 is the local dev server and api.example.com is a documented
+  # placeholder (the real production domain does not exist yet); both are intentional.
+  no-server-example.com: off
   # 1. Schema property names are snake_case (global Jackson configuration, D-025).
   rule/schema-properties-snake-case:
     subject:

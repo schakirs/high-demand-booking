@@ -89,6 +89,10 @@
         <groupId>com.github.eirslett</groupId>
         <artifactId>frontend-maven-plugin</artifactId>
         <version>2.0.2</version>
+        <!-- Runs for this aggregator pom only: without this, child modules (core, and
+             later deployables) would inherit these executions and re-run them with
+             ${project.basedir} resolved against their own directory, not backend/. -->
+        <inherited>false</inherited>
         <configuration>
           <workingDirectory>${project.basedir}/../contracts</workingDirectory>
         </configuration>

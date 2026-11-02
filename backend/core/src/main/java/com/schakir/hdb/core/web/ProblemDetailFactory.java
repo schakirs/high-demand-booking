@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 import org.slf4j.MDC;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -40,7 +41,7 @@ public final class ProblemDetailFactory {
     if (detail != null) {
       problem.setDetail(detail);
     }
-    return toResponseEntity(problem);
+    return toResponseEntity(problem, new HttpHeaders());
   }
 
   /** An unclassified problem: {@code type: about:blank} (RFC 9457's own fallback). */
@@ -52,7 +53,7 @@ public final class ProblemDetailFactory {
     if (detail != null) {
       problem.setDetail(detail);
     }
-    return toResponseEntity(problem);
+    return toResponseEntity(problem, new HttpHeaders());
   }
 
   /**
@@ -60,9 +61,11 @@ public final class ProblemDetailFactory {
    * ResponseEntityExceptionHandler}'s own default handling, for an exception this module does not
    * override) into the final response: {@code type} defaults to {@code /problems/validation-error}
    * for a 400, {@code about:blank} otherwise; {@code instance} is set from the MDC correlation id,
-   * never the request URI.
+   * never the request URI. {@code headers} is carried through unchanged except for the content type
+   * (e.g. a 405's {@code Allow} or a 415's {@code Accept}, which {@code
+   * ResponseEntityExceptionHandler} already computed and which this class must not drop).
    */
-  static ResponseEntity<Object> toResponseEntity(ProblemDetail problem) {
+  static ResponseEntity<Object> toResponseEntity(ProblemDetail problem, HttpHeaders headers) {
     if (problem.getType() == null) {
       if (problem.getStatus() == HttpStatus.BAD_REQUEST.value()) {
         problem.setType(URI.create("/problems/validation-error"));
@@ -72,8 +75,10 @@ public final class ProblemDetailFactory {
       }
     }
     setInstance(problem);
+    HttpHeaders responseHeaders = HttpHeaders.copyOf(headers);
+    responseHeaders.setContentType(PROBLEM_JSON);
     return ResponseEntity.status(problem.getStatus())
-        .contentType(PROBLEM_JSON)
+        .headers(responseHeaders)
         .body(asResponseBody(problem));
   }
 

@@ -49,7 +49,7 @@ public class TechnicalProblemHandler extends ResponseEntityExceptionHandler {
   protected ResponseEntity<Object> createResponseEntity(
       Object body, HttpHeaders headers, HttpStatusCode statusCode, WebRequest request) {
     if (body instanceof ProblemDetail problem) {
-      return ProblemDetailFactory.toResponseEntity(problem);
+      return ProblemDetailFactory.toResponseEntity(problem, headers);
     }
     return super.createResponseEntity(body, headers, statusCode, request);
   }
@@ -106,7 +106,9 @@ public class TechnicalProblemHandler extends ResponseEntityExceptionHandler {
   public ResponseEntity<Object> handleConstraintViolation(ConstraintViolationException ex) {
     String detail =
         ex.getConstraintViolations().stream()
-            .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
+            .map(
+                violation ->
+                    lastPathNode(violation.getPropertyPath()) + ": " + violation.getMessage())
             .collect(Collectors.joining("; "));
     return validationError(detail);
   }
@@ -160,6 +162,18 @@ public class TechnicalProblemHandler extends ResponseEntityExceptionHandler {
       return null;
     }
     return path.get(path.size() - 1).getPropertyName();
+  }
+
+  /**
+   * The constraint violation's own property name, not the full path: a method-level constraint
+   * reports a path such as {@code getEvent.eventId}, starting with the method name.
+   */
+  private static String lastPathNode(jakarta.validation.Path path) {
+    String name = null;
+    for (jakarta.validation.Path.Node node : path) {
+      name = node.getName();
+    }
+    return name;
   }
 
   private static String toSnakeCase(String camelCase) {

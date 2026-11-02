@@ -3,7 +3,9 @@ package com.schakir.hdb.core.web.testsupport;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.networknt.schema.Error;
@@ -195,6 +197,20 @@ class ProblemDetailsContractTests {
     mockMvc
         .perform(get("/test-only/samples/conflict"))
         .andExpect(status().isConflict())
+        .andExpect(content().contentType("application/problem+json"))
+        .andExpect(result -> assertType(result.getResponse().getContentAsString(), "about:blank"))
+        .andExpect(result -> assertNoInstance(result.getResponse().getContentAsString()))
+        .andExpect(
+            result ->
+                assertValidAgainstProblemDetailsSchema(result.getResponse().getContentAsString()));
+  }
+
+  @Test
+  void methodNotAllowedCarriesTheAllowHeader() throws Exception {
+    mockMvc
+        .perform(put("/test-only/samples/" + UUID.randomUUID()))
+        .andExpect(status().isMethodNotAllowed())
+        .andExpect(header().string("Allow", org.hamcrest.Matchers.containsString("POST")))
         .andExpect(content().contentType("application/problem+json"))
         .andExpect(result -> assertType(result.getResponse().getContentAsString(), "about:blank"))
         .andExpect(result -> assertNoInstance(result.getResponse().getContentAsString()))

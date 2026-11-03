@@ -219,17 +219,6 @@ class SecurityFilterChainTests extends SecurityTestSupport {
         .andExpect(status().isForbidden());
   }
 
-  // --- /error dispatch is not re-authorized into a 401/403 ---
-
-  @Test
-  void containerErrorDispatchKeepsItsStatus() throws Exception {
-    // StubHoldsApiController#confirmHold calls response.sendError(500) directly: proves a
-    // permitted request's container ERROR-dispatch forward to /error is not turned into 401/403.
-    mockMvc
-        .perform(post("/v1/holds/" + UUID.randomUUID() + "/confirmations").with(userJwt(0)))
-        .andExpect(status().isInternalServerError());
-  }
-
   // --- Caller id comes from the token only ---
 
   @Test

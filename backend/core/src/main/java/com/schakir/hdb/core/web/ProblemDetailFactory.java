@@ -1,5 +1,7 @@
 package com.schakir.hdb.core.web;
 
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -11,11 +13,12 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Builds every {@code application/problem+json} response (RFC 9457, D-021). Each module maps its
- * own business problems through {@link #response}; the security filter chain (#6) will reuse it for
- * 401/403 (ADR 0037).
+ * own business problems through {@link #response}; the security filter chain (#6) reuses {@link
+ * #writeTo} for 401/403, written outside MVC dispatch (ADR 0037).
  *
  * <p>Build every problem response with this factory, never by returning a {@link ProblemDetail}
  * from {@code ResponseEntity.body(...)} directly: Spring MVC fills a null {@code instance} with the
@@ -32,6 +35,36 @@ public final class ProblemDetailFactory {
   /** A business or validation problem: {@code type: /problems/<kebab-case-name>}. */
   public static ResponseEntity<Object> response(
       HttpStatusCode status, String problemName, String title, String detail) {
+    ProblemDetail problem = buildProblem(status, problemName, title, detail);
+    return toResponseEntity(problem, new HttpHeaders());
+  }
+
+  /**
+   * Writes a business problem directly to a servlet response, for the one place outside MVC
+   * dispatch that needs one: the security filter chain's 401/403 (ADR 0037). {@code mapper} must be
+   * the application's own, configured bean (snake_case, {@code non_null}), not a fresh instance.
+   *
+   * <p>Never calls {@code response.reset()}: the caller (a {@code Bearer*} entry
+   * point/access-denied handler) has already set the status and the {@code WWW-Authenticate}
+   * header, and resetting would erase it.
+   */
+  public static void writeTo(
+      HttpServletResponse response,
+      ObjectMapper mapper,
+      HttpStatusCode status,
+      String problemName,
+      String title,
+      String detail)
+      throws IOException {
+    ProblemDetail problem = buildProblem(status, problemName, title, detail);
+    setInstance(problem);
+    response.setStatus(problem.getStatus());
+    response.setContentType(PROBLEM_JSON.toString());
+    mapper.writeValue(response.getOutputStream(), asResponseBody(problem));
+  }
+
+  private static ProblemDetail buildProblem(
+      HttpStatusCode status, String problemName, String title, String detail) {
     if (!KEBAB_CASE.matcher(problemName).matches()) {
       throw new IllegalArgumentException("Problem name must be kebab-case: " + problemName);
     }
@@ -41,7 +74,7 @@ public final class ProblemDetailFactory {
     if (detail != null) {
       problem.setDetail(detail);
     }
-    return toResponseEntity(problem, new HttpHeaders());
+    return problem;
   }
 
   /** An unclassified problem: {@code type: about:blank} (RFC 9457's own fallback). */

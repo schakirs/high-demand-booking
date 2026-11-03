@@ -87,8 +87,13 @@ class SecurityFilterChainTests extends SecurityTestSupport {
             .build();
   }
 
-  // --- Contract-driven guardrail (CLAUDE.md rule 10): every operation in the contract requires
-  // at least authentication. Read from contracts/openapi.yaml, not hand-written. ---
+  // --- Contract-driven guardrail (CLAUDE.md rule 10): every operation read from
+  // contracts/openapi.yaml, not hand-written, must have a rule in SecurityConfig. Anonymous ->
+  // 401 holds even for a forgotten rule (denyAll() also returns 401 to an anonymous caller), so
+  // that alone proves nothing; pairing it with an admin token -> neither 401 nor 403 does, since
+  // an admin token satisfies every hasAuthority(...)/authenticated() rule in the chain. Removing
+  // any one requestMatchers(...) rule from SecurityConfig makes the admin-token assertion below
+  // fail (verified manually). ---
 
   static Stream<Arguments> contractOperations() {
     JsonNode contract = new YAMLMapper().readTree(new File("../../contracts/openapi.yaml"));
@@ -116,6 +121,16 @@ class SecurityFilterChainTests extends SecurityTestSupport {
                 assertValidAgainstProblemDetailsSchema(result.getResponse().getContentAsString()));
   }
 
+  @ParameterizedTest(name = "{0} {1}")
+  @MethodSource("contractOperations")
+  void everyContractOperationIsReachableByAnAdmin(String method, String path) throws Exception {
+    String resolvedPath = path.replaceAll("\\{[^}]+}", UUID.randomUUID().toString());
+
+    mockMvc
+        .perform(requestFor(method, resolvedPath).with(adminJwt()))
+        .andExpect(result -> assertThat(result.getResponse().getStatus()).isNotIn(401, 403));
+  }
+
   private static org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder
       requestFor(String method, String path) {
     return switch (method) {
@@ -136,30 +151,6 @@ class SecurityFilterChainTests extends SecurityTestSupport {
         .andExpect(
             result ->
                 assertValidAgainstProblemDetailsSchema(result.getResponse().getContentAsString()));
-  }
-
-  @Test
-  void createEventWithAdminScopePassesSecurity() throws Exception {
-    mockMvc
-        .perform(post("/v1/events").with(adminJwt()))
-        .andExpect(result -> assertThat(result.getResponse().getStatus()).isNotIn(401, 403));
-  }
-
-  @Test
-  void theOtherFourOperationsPassSecurityForAnyAuthenticatedUser() throws Exception {
-    UUID id = UUID.randomUUID();
-    mockMvc
-        .perform(get("/v1/events/" + id).with(userJwt(0)))
-        .andExpect(result -> assertThat(result.getResponse().getStatus()).isNotIn(401, 403));
-    mockMvc
-        .perform(post("/v1/events/" + id + "/holds").with(userJwt(0)))
-        .andExpect(result -> assertThat(result.getResponse().getStatus()).isNotIn(401, 403));
-    mockMvc
-        .perform(get("/v1/holds/" + id).with(userJwt(0)))
-        .andExpect(result -> assertThat(result.getResponse().getStatus()).isNotIn(401, 403));
-    mockMvc
-        .perform(post("/v1/holds/" + id + "/confirmations").with(userJwt(0)))
-        .andExpect(result -> assertThat(result.getResponse().getStatus()).isNotIn(401, 403));
   }
 
   // --- Actuator and unknown routes ---

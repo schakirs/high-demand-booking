@@ -3,14 +3,13 @@ package com.schakir.hdb.core.booking.testsupport;
 import com.schakir.hdb.core.booking.api.HoldsApi;
 import com.schakir.hdb.core.booking.api.model.Hold;
 import com.schakir.hdb.core.booking.api.model.HoldStatus;
+import com.schakir.hdb.core.web.Caller;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.UUID;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -20,10 +19,9 @@ import org.springframework.web.context.request.ServletRequestAttributes;
  * five contract operations something to route to for the security tests (#6), mirroring the
  * temporary {@code StubEventsApiController} pattern from #5, until the real controller lands (#7).
  *
- * <p>{@link #getHold} doubles as the caller-id probe: it returns the token's {@code sub} as {@code
- * Hold.id}, read from the security context (the generated interface's fixed signature has no room
- * for an {@code @AuthenticationPrincipal Jwt} parameter) — proving the caller id comes only from
- * the token, never from a header or query parameter a caller might also send.
+ * <p>{@link #getHold} doubles as the caller-id probe: it returns {@link Caller#id()} as {@code
+ * Hold.id} — proving the caller id comes only from the token, never from a header or query
+ * parameter a caller might also send.
  *
  * <p>{@link #confirmHold} doubles as the {@code /error}-dispatch probe: it calls {@code
  * response.sendError(500)} directly and returns {@code null} (Spring MVC's signal that the response
@@ -40,9 +38,7 @@ class StubHoldsApiController implements HoldsApi {
 
   @Override
   public ResponseEntity<Hold> getHold(UUID holdId) {
-    Jwt jwt = (Jwt) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-    UUID callerId = UUID.fromString(jwt.getSubject());
-    Hold hold = new Hold(callerId, holdId, HoldStatus.ACTIVE, Instant.now().plusSeconds(60));
+    Hold hold = new Hold(Caller.id(), holdId, HoldStatus.ACTIVE, Instant.now().plusSeconds(60));
     return ResponseEntity.ok(hold);
   }
 

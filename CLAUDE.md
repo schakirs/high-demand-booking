@@ -63,9 +63,10 @@ contract change regenerates them on the next build.
    Nothing depends on `booking`. `user` owns token validation and the security filter chain
    (D-038); it may depend on `web` (to build its 401/403 problems) and nothing depends on
    `user` — it is declared `@ApplicationModule(allowedDependencies = "web")`. Controllers read
-   the caller with `@AuthenticationPrincipal Jwt` (a Spring Security type, not a `user` type)
-   and pass a plain `UUID` (the token's `sub`) to the domain; the domain never sees Spring
-   Security types. A user id is never read from the request (header, path, query or body).
+   the caller with `web`'s `Caller.id()` (generated interfaces have a fixed signature, so
+   `@AuthenticationPrincipal` cannot be used) and pass the plain `UUID` it returns (the token's
+   `sub`) to the domain; the domain never sees Spring Security types. A user id is never read
+   from the request (header, path, query or body).
    No cycles. `event` creates the stock from its own `EventCreated`
    (after-commit listener) through the idempotent
    `inventory.createStock(eventId, capacity, opensAt, holdDuration)`.

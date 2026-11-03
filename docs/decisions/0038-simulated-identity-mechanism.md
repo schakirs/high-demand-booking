@@ -76,7 +76,9 @@ be replayed.
 - No contract change beyond the `WWW-Authenticate` header declaration (1.4.0).
 - Authorization rules are contract-driven only by discipline, not by generation: a new
   operation needs its own rule added by hand; a test parses `contracts/openapi.yaml` and fails
-  if one is missing (an admin token must get neither 401 nor 403 on every operation).
+  if one is missing or wrongly scoped (an admin token must get neither 401 nor 403 on every
+  operation, and a regular user token must get neither 401 nor 403 on every operation except
+  the hand-listed `ADMIN_OPERATIONS` set in the test itself).
 - Tokens expire; regenerate before each run (`tokens.ttl`, default `PT1H`).
 - Only `GET` is exposed on the two actuator paths; no RFC 9728 metadata endpoint.
 - Every full-context test needs a public key to start, via a shared `SecurityTestSupport` base.

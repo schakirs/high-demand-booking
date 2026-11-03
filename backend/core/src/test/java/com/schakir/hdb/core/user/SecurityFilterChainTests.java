@@ -91,9 +91,15 @@ class SecurityFilterChainTests extends SecurityTestSupport {
   // contracts/openapi.yaml, not hand-written, must have a rule in SecurityConfig. Anonymous ->
   // 401 holds even for a forgotten rule (denyAll() also returns 401 to an anonymous caller), so
   // that alone proves nothing; pairing it with an admin token -> neither 401 nor 403 does, since
-  // an admin token satisfies every hasAuthority(...)/authenticated() rule in the chain. Removing
-  // any one requestMatchers(...) rule from SecurityConfig makes the admin-token assertion below
-  // fail (verified manually). ---
+  // an admin token satisfies every hasAuthority(...)/authenticated() rule in the chain. That
+  // alone still misses an operation wrongly tightened to admin-only (an admin token would still
+  // pass it): a regular user token must also get neither 401 nor 403 on every operation except
+  // the ones listed in ADMIN_OPERATIONS. Removing any one requestMatchers(...) rule, or switching
+  // any non-admin rule to hasAuthority("SCOPE_admin"), makes one of the two assertions below fail
+  // (verified manually). ---
+
+  /** Contract operations (as "{method} {path}") that require SCOPE_admin. */
+  private static final Set<String> ADMIN_OPERATIONS = Set.of("post /v1/events");
 
   static Stream<Arguments> contractOperations() {
     JsonNode contract = new YAMLMapper().readTree(new File("../../contracts/openapi.yaml"));
@@ -105,6 +111,12 @@ class SecurityFilterChainTests extends SecurityTestSupport {
       }
     }
     return operations.stream();
+  }
+
+  static Stream<Arguments> nonAdminOperations() {
+    return contractOperations()
+        .filter(
+            arguments -> !ADMIN_OPERATIONS.contains(arguments.get()[0] + " " + arguments.get()[1]));
   }
 
   @ParameterizedTest(name = "{0} {1}")
@@ -128,6 +140,17 @@ class SecurityFilterChainTests extends SecurityTestSupport {
 
     mockMvc
         .perform(requestFor(method, resolvedPath).with(adminJwt()))
+        .andExpect(result -> assertThat(result.getResponse().getStatus()).isNotIn(401, 403));
+  }
+
+  @ParameterizedTest(name = "{0} {1}")
+  @MethodSource("nonAdminOperations")
+  void everyNonAdminOperationIsReachableByARegularUser(String method, String path)
+      throws Exception {
+    String resolvedPath = path.replaceAll("\\{[^}]+}", UUID.randomUUID().toString());
+
+    mockMvc
+        .perform(requestFor(method, resolvedPath).with(userJwt(0)))
         .andExpect(result -> assertThat(result.getResponse().getStatus()).isNotIn(401, 403));
   }
 

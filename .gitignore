@@ -26,11 +26,12 @@ out/
 .DS_Store
 Thumbs.db
 
-# Local environment and secrets (signing keys, generated tokens: D-030)
+# Local environment and secrets (signing keys, generated tokens: D-030, D-038)
 .env
 *.local.*
 *.pem
 *.key
+.local/
 load-tests/tokens*.json
 
 # k6 results

@@ -1,10 +1,15 @@
 package com.schakir.hdb.core.user.testsupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -32,6 +37,19 @@ class TestTokensCliTests {
     String secondPublicKey = Files.readString(outputDir.resolve("public.pem"));
 
     assertThat(secondPublicKey).isEqualTo(firstPublicKey);
+  }
+
+  @Test
+  void privateKeyFileIsRestrictedToOwner(@TempDir Path tempDir) throws Exception {
+    assumeTrue(FileSystems.getDefault().supportedFileAttributeViews().contains("posix"));
+    Path outputDir = tempDir.resolve("identity");
+    Path tokensJson = tempDir.resolve("tokens.json");
+
+    runCli(outputDir, tokensJson, false);
+
+    Set<PosixFilePermission> permissions =
+        Files.getPosixFilePermissions(outputDir.resolve("private.pem"));
+    assertThat(permissions).isEqualTo(PosixFilePermissions.fromString("rw-------"));
   }
 
   @Test

@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.interfaces.ECPrivateKey;
@@ -204,7 +205,17 @@ public final class TestTokens {
     TestTokens tokens = ephemeral();
     Files.writeString(publicPem, tokens.publicKeyPem());
     Files.writeString(privatePem, tokens.privateKeyPem());
+    restrictToOwner(privatePem);
     return tokens;
+  }
+
+  /** {@code rw-------}; a no-op where the file system has no POSIX permission model. */
+  private static void restrictToOwner(Path privatePem) throws IOException {
+    try {
+      Files.setPosixFilePermissions(privatePem, PosixFilePermissions.fromString("rw-------"));
+    } catch (UnsupportedOperationException ignored) {
+      // Not a POSIX file system (e.g. Windows): nothing to restrict.
+    }
   }
 
   private static void writeTokensJson(

@@ -22,7 +22,7 @@ import com.schakir.hdb.core.user.testsupport.TestTokens;
 import com.schakir.hdb.testsupport.SecurityTestSupport;
 import com.schakir.hdb.testsupport.TestcontainersConfiguration;
 import java.io.File;
-import java.security.SecureRandom;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
@@ -299,7 +299,7 @@ class SecurityFilterChainTests extends SecurityTestSupport {
             "wrong signing key",
             OTHER_SIGNER.token(TestTokens.userId(0), now, Duration.ofHours(1), Set.of())),
         Arguments.of(
-            "alg HS256",
+            "alg HS256 (algorithm confusion: public key as the HMAC secret)",
             signHs256(
                 new JWTClaimsSet.Builder()
                     .subject(validSub)
@@ -391,10 +391,16 @@ class SecurityFilterChainTests extends SecurityTestSupport {
     }
   }
 
+  /**
+   * The real algorithm-confusion attack: an attacker who only ever saw the public key (it is not
+   * secret) signs with HS256 using those same bytes as the HMAC secret, hoping a verifier that
+   * trusts the token's own {@code alg} header will check the signature against the public key value
+   * instead of rejecting a non-ES256 token outright. Our key selector is pinned to ES256 (D-038),
+   * so this must still be rejected.
+   */
   private static String signHs256(JWTClaimsSet claims) {
     try {
-      byte[] secret = new byte[32];
-      new SecureRandom().nextBytes(secret);
+      byte[] secret = tokens().publicKeyPem().getBytes(StandardCharsets.UTF_8);
       SignedJWT jwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.HS256).build(), claims);
       jwt.sign(new MACSigner(secret));
       return jwt.serialize();

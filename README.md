@@ -19,10 +19,28 @@ No waiting room, no payment, no frontend.
 
 ## Running locally
 
+The app needs an ES256 public key to validate bearer tokens (D-038); it does not start without
+one. Generate a key pair and a set of test tokens first:
+
+```
+cd backend
+./mvnw -pl core test-compile exec:java@tokens -Dtokens.users=10 -Dtokens.ttl=PT1H
+```
+
+This writes `.local/identity/{private,public}.pem` (reused on later runs; add `-Dtokens.rotate`
+to generate a new pair) and `load-tests/tokens.json` (an admin token and one per user, by index).
+Both are gitignored. It also prints the exact `HDB_SECURITY_JWT_PUBLIC_KEY_LOCATION` value to
+use below.
+
 ```
 docker compose up -d                  # PostgreSQL 18, Prometheus, Grafana
-cd backend && ./mvnw spring-boot:run  # starts the app on :8080, against the compose Postgres
+cd backend
+HDB_SECURITY_JWT_PUBLIC_KEY_LOCATION=file:$(pwd)/../.local/identity/public.pem \
+  ./mvnw spring-boot:run              # starts the app on :8080, against the compose Postgres
 ```
+
+Call the API with `Authorization: Bearer <token>`, using a token from `load-tests/tokens.json`
+(`admin` for `POST /v1/events`, any entry under `users` for the rest).
 
 Flyway runs its migrations at startup. Prometheus scrapes the app at
 `host.docker.internal:8080/actuator/prometheus` (http://localhost:9090/targets to check it's

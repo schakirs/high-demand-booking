@@ -1,6 +1,6 @@
 # 0027 — Dependency direction: inventory depends on no module
 
-- **Status**: Accepted
+- **Status**: Accepted, amended by 0038
 - **Date**: 2026-10-25, revised 2026-10-26 (foundation review)
 - **Related**: D-004, D-009, D-013, D-014, D-016, D-020, D-024, D-028; replaces the original
   flow 0, where inventory listened to `EventCreated`

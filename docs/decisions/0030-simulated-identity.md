@@ -1,6 +1,6 @@
 # 0030 — Simulated identity with locally signed bearer tokens
 
-- **Status**: Accepted
+- **Status**: Accepted, amended by 0038
 - **Date**: 2026-10-25
 - **Related**: R3, D-021; amends 0007 (mechanism)
 

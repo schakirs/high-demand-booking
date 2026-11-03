@@ -3,6 +3,7 @@ package com.schakir.hdb.core;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
 
+import com.schakir.hdb.testsupport.SecurityTestSupport;
 import com.schakir.hdb.testsupport.TestcontainersConfiguration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -13,7 +14,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 @SpringBootTest(webEnvironment = RANDOM_PORT)
 @Import(TestcontainersConfiguration.class)
-class MigrationBaselineTests {
+class MigrationBaselineTests extends SecurityTestSupport {
 
   @Autowired private JdbcTemplate jdbcTemplate;
 

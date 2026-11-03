@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
 
+import com.schakir.hdb.testsupport.SecurityTestSupport;
 import com.schakir.hdb.testsupport.TestcontainersConfiguration;
 import com.zaxxer.hikari.HikariDataSource;
 import java.sql.Connection;
@@ -21,7 +22,7 @@ import org.springframework.context.annotation.Import;
 
 @SpringBootTest(webEnvironment = RANDOM_PORT)
 @Import(TestcontainersConfiguration.class)
-class HikariConnectionPoolTests {
+class HikariConnectionPoolTests extends SecurityTestSupport {
 
   @Autowired private DataSource dataSource;
 

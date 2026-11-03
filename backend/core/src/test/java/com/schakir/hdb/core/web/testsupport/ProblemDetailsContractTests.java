@@ -13,6 +13,7 @@ import com.networknt.schema.Schema;
 import com.networknt.schema.SchemaRegistry;
 import com.networknt.schema.SpecificationVersion;
 import com.schakir.hdb.core.web.CorrelationId;
+import com.schakir.hdb.testsupport.SecurityTestSupport;
 import com.schakir.hdb.testsupport.TestcontainersConfiguration;
 import java.io.File;
 import java.util.List;
@@ -39,11 +40,13 @@ import tools.jackson.dataformat.yaml.YAMLMapper;
  * hand-built one. Uses {@code MockMvcBuilders.webAppContextSetup} directly instead of
  * {@code @AutoConfigureMockMvc}: that annotation now lives in the {@code spring-boot-webmvc-test}
  * module, which is not part of this ticket's approved dependencies (Spring Boot 4 split it out of
- * {@code spring-boot-test-autoconfigure}).
+ * {@code spring-boot-test-autoconfigure}). Extends {@link SecurityTestSupport} only so the
+ * application context has a public key to start with (D-038); these requests never go through the
+ * security filter chain (no {@code springSecurity()} configurer applied).
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @Import(TestcontainersConfiguration.class)
-class ProblemDetailsContractTests {
+class ProblemDetailsContractTests extends SecurityTestSupport {
 
   @Autowired private WebApplicationContext webApplicationContext;
   private MockMvc mockMvc;

@@ -3,6 +3,7 @@ package com.schakir.hdb.core;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
 
+import com.schakir.hdb.testsupport.SecurityTestSupport;
 import com.schakir.hdb.testsupport.TestcontainersConfiguration;
 import java.sql.SQLException;
 import javax.sql.DataSource;
@@ -17,7 +18,7 @@ import org.springframework.web.client.RestTemplate;
 
 @SpringBootTest(webEnvironment = RANDOM_PORT)
 @Import(TestcontainersConfiguration.class)
-class PrometheusEndpointTests {
+class PrometheusEndpointTests extends SecurityTestSupport {
 
   @LocalServerPort private int port;
   @Autowired private DataSource dataSource;

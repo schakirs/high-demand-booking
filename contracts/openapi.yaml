@@ -12,7 +12,7 @@ info:
     - Timestamps are ISO 8601 date-times in UTC.
     - Property names use snake_case.
     - The calling user is identified by the bearer token; user IDs are never sent in requests.
-  version: 1.3.0
+  version: 1.4.0
 
 servers:
   - url: http://localhost:8080
@@ -276,6 +276,11 @@ components:
             detail: "capacity: must be greater than or equal to 1"
     Unauthorized:
       description: Missing or invalid token.
+      headers:
+        WWW-Authenticate:
+          description: 'RFC 6750 §3: `Bearer` when no token was sent, `Bearer error="invalid_token"` when a token was rejected.'
+          schema:
+            type: string
       content:
         application/problem+json:
           schema:
@@ -286,6 +291,11 @@ components:
             status: 401
     Forbidden:
       description: The caller does not have the required role.
+      headers:
+        WWW-Authenticate:
+          description: 'RFC 6750 §3: `Bearer error="insufficient_scope"`.'
+          schema:
+            type: string
       content:
         application/problem+json:
           schema:

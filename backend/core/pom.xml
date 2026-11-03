@@ -35,6 +35,13 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-validation</artifactId>
     </dependency>
+    <dependency>
+      <!-- Resource-server support for JWT validation (D-030, D-038). Boot 4's RSA-only
+           public-key-location auto-configuration is not used (ES256 needs an EC key); the
+           user module builds its own JwtDecoder (JwtDecoderConfig). -->
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security-oauth2-resource-server</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -62,6 +69,11 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security-oauth2-resource-server-test</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -186,6 +198,27 @@
               <modelPackage>com.schakir.hdb.core.booking.api.model</modelPackage>
               <apisToGenerate>Holds</apisToGenerate>
               <modelsToGenerate>Hold,HoldStatus</modelsToGenerate>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- Runs the ES256 token generator (D-038) from test classes. No <phase>: this never
+           runs during ./mvnw verify, only via the documented command
+           (./mvnw -pl core test-compile exec:java@tokens -Dtokens.users=... ). Never in
+           src/main, so never in the jar. -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.6.4</version>
+        <executions>
+          <execution>
+            <id>tokens</id>
+            <goals>
+              <goal>java</goal>
+            </goals>
+            <configuration>
+              <mainClass>com.schakir.hdb.core.user.testsupport.TestTokens</mainClass>
+              <classpathScope>test</classpathScope>
             </configuration>
           </execution>
         </executions>

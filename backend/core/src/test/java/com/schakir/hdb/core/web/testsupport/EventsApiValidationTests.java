@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.schakir.hdb.testsupport.SecurityTestSupport;
 import com.schakir.hdb.testsupport.TestcontainersConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,10 +24,16 @@ import tools.jackson.databind.ObjectMapper;
  * StubEventsApiController}. {@code SampleValidatedController} covers the handler's own logic
  * (unknown properties, non-UUID paths, the 500 fallback); this class only has to prove the
  * generated contract wiring produces the same shape.
+ *
+ * <p>Extends {@link SecurityTestSupport} only so the application context has a public key to start
+ * with (D-038); {@code MockMvcBuilders.webAppContextSetup(...)} without {@code springSecurity()}
+ * never runs the security filter chain, so these requests reach the controller regardless of the
+ * {@code SCOPE_admin} rule on {@code POST /v1/events} — security itself is covered by the security
+ * tests (#6).
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @Import(TestcontainersConfiguration.class)
-class EventsApiValidationTests {
+class EventsApiValidationTests extends SecurityTestSupport {
 
   @Autowired private WebApplicationContext webApplicationContext;
   private MockMvc mockMvc;

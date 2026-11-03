@@ -37,6 +37,18 @@ spring:
     runtime:
       flyway-enabled: true
 
+hdb:
+  security:
+    jwt:
+      # No default (D-038): the application must not start without a public key (ES256,
+      # P-256, PEM). Boot's own public-key-location property is RSA-only, so this is read
+      # directly by the user module's own JwtDecoder bean, not by Boot's auto-configuration.
+      # public-key-location: set via HDB_SECURITY_JWT_PUBLIC_KEY_LOCATION or this key.
+      #
+      # Explicit, not the Spring default of 60s read from code: the value must be visible
+      # here, in one place, and a missing property is a startup failure just like the key.
+      clock-skew: 60s
+
 management:
   endpoints:
     web:

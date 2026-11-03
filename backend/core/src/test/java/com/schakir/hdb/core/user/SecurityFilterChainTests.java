@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -111,7 +110,7 @@ class SecurityFilterChainTests extends SecurityTestSupport {
     mockMvc
         .perform(requestFor(method, resolvedPath))
         .andExpect(status().isUnauthorized())
-        .andExpect(header().string("WWW-Authenticate", Matchers.startsWith("Bearer")))
+        .andExpect(header().string("WWW-Authenticate", "Bearer"))
         .andExpect(
             result ->
                 assertValidAgainstProblemDetailsSchema(result.getResponse().getContentAsString()));
@@ -133,10 +132,7 @@ class SecurityFilterChainTests extends SecurityTestSupport {
     mockMvc
         .perform(post("/v1/events").with(userJwt(0)))
         .andExpect(status().isForbidden())
-        .andExpect(
-            header()
-                .string(
-                    "WWW-Authenticate", Matchers.containsString("error=\"insufficient_scope\"")))
+        .andExpect(header().string("WWW-Authenticate", "Bearer error=\"insufficient_scope\""))
         .andExpect(
             result ->
                 assertValidAgainstProblemDetailsSchema(result.getResponse().getContentAsString()));
@@ -192,10 +188,12 @@ class SecurityFilterChainTests extends SecurityTestSupport {
   void protectedResourceMetadataEndpointIsNotExposed() throws Exception {
     mockMvc
         .perform(get("/.well-known/oauth-protected-resource"))
-        .andExpect(status().isUnauthorized());
+        .andExpect(status().isUnauthorized())
+        .andExpect(header().string("WWW-Authenticate", "Bearer"));
     mockMvc
         .perform(get("/.well-known/oauth-protected-resource").with(userJwt(0)))
-        .andExpect(status().isForbidden());
+        .andExpect(status().isForbidden())
+        .andExpect(header().string("WWW-Authenticate", "Bearer error=\"insufficient_scope\""));
   }
 
   // --- Order: authentication/authorization before the body is read ---
@@ -293,9 +291,7 @@ class SecurityFilterChainTests extends SecurityTestSupport {
     mockMvc
         .perform(get("/v1/events/" + UUID.randomUUID()).header("Authorization", "Bearer " + token))
         .andExpect(status().isUnauthorized())
-        .andExpect(
-            header()
-                .string("WWW-Authenticate", Matchers.containsString("error=\"invalid_token\"")));
+        .andExpect(header().string("WWW-Authenticate", "Bearer error=\"invalid_token\""));
   }
 
   // --- No default user / generated password (requirement 6) ---
@@ -399,8 +395,7 @@ class SecurityFilterChainTests extends SecurityTestSupport {
     mockMvc
         .perform(get("/v1/events/" + UUID.randomUUID()).header("Authorization", "Bearer " + token))
         .andExpect(status().isUnauthorized())
-        .andExpect(
-            header().string("WWW-Authenticate", Matchers.containsString("error=\"invalid_token\"")))
+        .andExpect(header().string("WWW-Authenticate", "Bearer error=\"invalid_token\""))
         .andExpect(
             result ->
                 assertValidAgainstProblemDetailsSchema(result.getResponse().getContentAsString()));

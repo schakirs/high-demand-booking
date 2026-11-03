@@ -186,6 +186,18 @@ class SecurityFilterChainTests extends SecurityTestSupport {
     mockMvc.perform(get("/v1/does-not-exist").with(userJwt(0))).andExpect(status().isForbidden());
   }
 
+  // --- RFC 9728 metadata endpoint is not in the contract: must not be reachable (Must-fix 1) ---
+
+  @Test
+  void protectedResourceMetadataEndpointIsNotExposed() throws Exception {
+    mockMvc
+        .perform(get("/.well-known/oauth-protected-resource"))
+        .andExpect(status().isUnauthorized());
+    mockMvc
+        .perform(get("/.well-known/oauth-protected-resource").with(userJwt(0)))
+        .andExpect(status().isForbidden());
+  }
+
   // --- Order: authentication/authorization before the body is read ---
 
   @Test

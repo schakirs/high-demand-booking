@@ -8,6 +8,8 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.server.resource.web.OAuth2ProtectedResourceMetadataFilter;
+import org.springframework.security.web.DefaultSecurityFilterChain;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
@@ -18,14 +20,18 @@ import org.springframework.security.web.SecurityFilterChain;
  * distinction is Spring Security's own {@code ExceptionTranslationFilter} behaviour, not custom
  * logic here.
  *
- * <p>{@code /test-only/**} is test scaffolding (exists only under {@code src/test}, never reachable
- * in production) exempted so the shared technical error handling tests (#5) keep running without a
- * token. {@code DispatcherType.ERROR} is exempted so a container error dispatch (Boot's {@code
- * /error} forward for an unmapped path or a raw {@code sendError}) is never re-authorized into a
- * 401/403.
+ * <p>{@code DispatcherType.ERROR} is exempted so a container error dispatch (Boot's {@code /error}
+ * forward for an unmapped path or a raw {@code sendError}) is never re-authorized into a 401/403.
  *
  * <p>No {@code @PreAuthorize}: an {@code AccessDeniedException} raised inside MVC would be turned
  * into a 500 by {@code TechnicalProblemHandler}, not handled here.
+ *
+ * <p>{@link OAuth2ProtectedResourceMetadataFilter} (RFC 9728) is removed after the chain is built:
+ * {@code OAuth2ResourceServerConfigurer} adds it unconditionally whenever {@code .jwt(...)} is
+ * configured, with no DSL switch to opt out, and it answers {@code GET
+ * /.well-known/oauth-protected-resource} itself before the authorization filter ever runs, so
+ * {@code denyAll()} cannot cover it. Without this, that endpoint would be reachable outside the
+ * contract (CLAUDE.md rule 8).
  */
 @Configuration
 @EnableWebSecurity
@@ -46,8 +52,6 @@ class SecurityConfig {
             authorize ->
                 authorize
                     .dispatcherTypeMatchers(DispatcherType.ERROR)
-                    .permitAll()
-                    .requestMatchers("/test-only/**")
                     .permitAll()
                     .requestMatchers(HttpMethod.GET, "/actuator/health")
                     .permitAll()
@@ -71,6 +75,8 @@ class SecurityConfig {
                     .jwt(Customizer.withDefaults())
                     .authenticationEntryPoint(authenticationEntryPoint)
                     .accessDeniedHandler(accessDeniedHandler));
-    return http.build();
+    DefaultSecurityFilterChain chain = http.build();
+    chain.getFilters().removeIf(filter -> filter instanceof OAuth2ProtectedResourceMetadataFilter);
+    return chain;
   }
 }

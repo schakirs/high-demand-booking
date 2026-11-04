@@ -9,6 +9,7 @@ import com.schakir.hdb.testsupport.SecurityTestSupport;
 import com.schakir.hdb.testsupport.TestcontainersConfiguration;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -41,16 +42,20 @@ class EventCreationRollbackTests extends SecurityTestSupport {
     // before the failure (see the listener's own Javadoc).
     assertThat(failureInjectingListener.countsBeforeFailure()).containsExactly(1L, 1L);
 
-    assertThat(countAllEvents()).isZero();
-    assertThat(countAllPublications()).isZero();
+    UUID eventId = failureInjectingListener.publishedEventId();
+    assertThat(countEvents(eventId)).isZero();
+    assertThat(countPublicationsMentioning(eventId)).isZero();
   }
 
-  private long countAllEvents() {
-    return jdbcTemplate.queryForObject("SELECT count(*) FROM event.event", Long.class);
-  }
-
-  private long countAllPublications() {
+  private long countEvents(UUID id) {
     return jdbcTemplate.queryForObject(
-        "SELECT count(*) FROM modulith.event_publication", Long.class);
+        "SELECT count(*) FROM event.event WHERE id = ?", Long.class, id);
+  }
+
+  private long countPublicationsMentioning(UUID id) {
+    return jdbcTemplate.queryForObject(
+        "SELECT count(*) FROM modulith.event_publication WHERE serialized_event LIKE ?",
+        Long.class,
+        "%" + id + "%");
   }
 }

@@ -1,6 +1,7 @@
 package com.schakir.hdb.core.event.testsupport;
 
 import com.schakir.hdb.core.event.internal.EventCreated;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -30,30 +31,42 @@ public class TransactionRollbackSimulatingConfiguration {
 
     private final JdbcTemplate jdbcTemplate;
     private final AtomicReference<long[]> countsBeforeFailure = new AtomicReference<>();
+    private final AtomicReference<UUID> publishedEventId = new AtomicReference<>();
 
     FailureInjectingListener(JdbcTemplate jdbcTemplate) {
       this.jdbcTemplate = jdbcTemplate;
     }
 
     /**
-     * Reads both counts, on the same connection and transaction, before throwing. These counts —
-     * not an assumption about listener ordering relative to the registry's own write — are what
-     * make the rollback assertion meaningful: if the registry row had not actually been written yet
-     * at this point, this would read 0 and the test fails loudly here, instead of passing vacuously
-     * because the row was simply never written at all.
+     * Reads both counts for this one published event's id only — not whole tables, which other
+     * tests sharing the same database may also have rows in — on the same connection and
+     * transaction, before throwing. These counts, not an assumption about listener ordering
+     * relative to the registry's own write, are what make the rollback assertion meaningful: if the
+     * registry row had not actually been written yet at this point, this would read 0 and the test
+     * fails loudly here, instead of passing vacuously because the row was simply never written at
+     * all.
      */
     @EventListener(EventCreated.class)
     void onPublishedBeforeCommit(EventCreated event) {
-      long eventRows = jdbcTemplate.queryForObject("SELECT count(*) FROM event.event", Long.class);
+      publishedEventId.set(event.eventId());
+      long eventRows =
+          jdbcTemplate.queryForObject(
+              "SELECT count(*) FROM event.event WHERE id = ?", Long.class, event.eventId());
       long publicationRows =
           jdbcTemplate.queryForObject(
-              "SELECT count(*) FROM modulith.event_publication", Long.class);
+              "SELECT count(*) FROM modulith.event_publication WHERE serialized_event LIKE ?",
+              Long.class,
+              "%" + event.eventId() + "%");
       countsBeforeFailure.set(new long[] {eventRows, publicationRows});
       throw new RuntimeException("simulated failure after publishEvent, before commit");
     }
 
     public long[] countsBeforeFailure() {
       return countsBeforeFailure.get();
+    }
+
+    public UUID publishedEventId() {
+      return publishedEventId.get();
     }
   }
 }

@@ -52,6 +52,12 @@
       <artifactId>spring-boot-starter-flyway</artifactId>
     </dependency>
     <dependency>
+      <!-- The event publication registry (D-013, D-020), schema-qualified into `modulith`
+           (ADR 0039): JdbcClient-based repository, no JPA (ADR 0040). -->
+      <groupId>org.springframework.modulith</groupId>
+      <artifactId>spring-modulith-starter-jdbc</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.flywaydb</groupId>
       <artifactId>flyway-database-postgresql</artifactId>
     </dependency>
@@ -74,6 +80,13 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-security-oauth2-resource-server-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <!-- @AutoConfigureMockMvc / @WebMvcTest, split out of spring-boot-test-autoconfigure
+           in Spring Boot 4 (#7). -->
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-webmvc-test</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>

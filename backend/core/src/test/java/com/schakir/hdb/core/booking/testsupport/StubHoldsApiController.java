@@ -16,8 +16,8 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 /**
  * Implements the real generated {@code HoldsApi} (stub body, never in {@code src/main}): gives the
- * five contract operations something to route to for the security tests (#6), mirroring the
- * temporary {@code StubEventsApiController} pattern from #5, until the real controller lands (#7).
+ * five contract operations something to route to for the security tests (#6), the same temporary
+ * pattern {@code event} used before its own real controller landed (#7).
  *
  * <p>{@link #getHold} doubles as the caller-id probe: it returns {@link Caller#id()} as {@code
  * Hold.id} — proving the caller id comes only from the token, never from a header or query

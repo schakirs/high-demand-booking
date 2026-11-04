@@ -20,10 +20,12 @@ import tools.jackson.databind.ObjectMapper;
 
 /**
  * Drives {@code TechnicalProblemHandler} through the real generated {@code EventsApi}
- * (bean-validation annotations the generator emits, not a hand-written {@code @Valid}) via {@link
- * StubEventsApiController}. {@code SampleValidatedController} covers the handler's own logic
- * (unknown properties, non-UUID paths, the 500 fallback); this class only has to prove the
- * generated contract wiring produces the same shape.
+ * (bean-validation annotations the generator emits, not a hand-written {@code @Valid}), now via the
+ * real {@code EventsApiController} (#7). {@code SampleValidatedController} covers the handler's own
+ * logic (unknown properties, non-UUID paths, the 500 fallback); this class only has to prove the
+ * generated contract wiring produces the same shape. None of these three requests reach the
+ * controller body: Bean Validation rejects them before the handler method is invoked, so no
+ * database access happens here.
  *
  * <p>Extends {@link SecurityTestSupport} only so the application context has a public key to start
  * with (D-038); {@code MockMvcBuilders.webAppContextSetup(...)} without {@code springSecurity()}

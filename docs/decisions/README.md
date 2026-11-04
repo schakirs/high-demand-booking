@@ -49,3 +49,6 @@ This rule applies from the first commit of the ADRs (ticket 1).
 | [0035](0035-ci-as-a-strict-required-check-on-every-pull-request.md) | CI as a strict required check on every pull request | Accepted |
 | [0036](0036-contract-first-toolchain.md) | Contract-first toolchain: generated interfaces per module and Redocly lint | Accepted |
 | [0037](0037-error-responses-shared-handler.md) | Error responses: shared technical handler, business problems per module | Accepted |
+| [0038](0038-simulated-identity-mechanism.md) | Simulated identity mechanism: ES256, a hand-built decoder, fail-closed URL rules | Accepted |
+| [0039](0039-operating-the-event-publication-registry.md) | Operating the event publication registry | Accepted |
+| [0040](0040-plain-sql-with-jdbcclient-and-database-generated-uuidv7.md) | Plain SQL with JdbcClient and database-generated UUIDv7 | Accepted |

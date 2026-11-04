@@ -1,6 +1,6 @@
 # 0033 — One PostgreSQL schema per module
 
-- **Status**: Accepted
+- **Status**: Accepted, amended by 0039
 - **Date**: 2026-10-29
 - **Related**: D-017, D-020, D-027
 

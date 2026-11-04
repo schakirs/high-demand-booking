@@ -36,8 +36,23 @@ spring:
   modulith:
     runtime:
       flyway-enabled: true
+    events:
+      # No periodic resubmission job yet (ADR 0039): the registry only replays incomplete
+      # publications on restart.
+      republish-outstanding-events-on-restart: true
+      jdbc:
+        schema: modulith
+        schema-initialization:
+          # The __root Flyway migration owns this table (ADR 0039); Modulith must not also
+          # try to create it.
+          enabled: false
 
 hdb:
+  event:
+    # No default (mirrors hdb.security.jwt below): the application must not start without
+    # an explicit, positive margin (ADR 0027, ADR 0039). Larger than the registry's
+    # resubmission delay, so a hold never races the stock's own creation.
+    sale-opening-margin: PT1H
   security:
     jwt:
       # No default (D-038): the application must not start without a public key (ES256,

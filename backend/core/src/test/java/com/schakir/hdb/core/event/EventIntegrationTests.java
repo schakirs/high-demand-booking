@@ -60,6 +60,39 @@ class EventIntegrationTests extends SecurityTestSupport {
   }
 
   @Test
+  void rejectsASaleStartTimeEqualToTheEventDateAndInsertsNothing() {
+    Instant saleStart = Instant.now().plus(Duration.ofDays(1));
+    long eventsBefore = countAllEvents();
+    long publicationsBefore = countAllPublications();
+
+    assertThatThrownBy(
+            () -> eventService.createEvent("Same Instant", null, 10, saleStart, saleStart, 300))
+        .isInstanceOf(EventValidationException.class)
+        .extracting(ex -> ((EventValidationException) ex).field())
+        .isEqualTo("sale_start_time");
+
+    assertThat(countAllEvents()).isEqualTo(eventsBefore);
+    assertThat(countAllPublications()).isEqualTo(publicationsBefore);
+  }
+
+  @Test
+  void rejectsASaleStartTimeAfterTheEventDateAndInsertsNothing() {
+    Instant saleStart = Instant.now().plus(Duration.ofDays(2));
+    Instant eventDate = saleStart.minus(Duration.ofDays(1));
+    long eventsBefore = countAllEvents();
+    long publicationsBefore = countAllPublications();
+
+    assertThatThrownBy(
+            () -> eventService.createEvent("Backwards", null, 10, saleStart, eventDate, 300))
+        .isInstanceOf(EventValidationException.class)
+        .extracting(ex -> ((EventValidationException) ex).field())
+        .isEqualTo("sale_start_time");
+
+    assertThat(countAllEvents()).isEqualTo(eventsBefore);
+    assertThat(countAllPublications()).isEqualTo(publicationsBefore);
+  }
+
+  @Test
   void rejectsASaleStartTimeJustBelowTheMarginAndInsertsNothing() {
     Instant nowFromDatabase = now();
     Instant justBelowMargin = nowFromDatabase.plus(Duration.ofHours(1)).minusSeconds(5);

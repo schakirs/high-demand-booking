@@ -50,8 +50,10 @@ spring:
 hdb:
   event:
     # No default (mirrors hdb.security.jwt below): the application must not start without
-    # an explicit, positive margin (ADR 0027, ADR 0039). Larger than the registry's
-    # resubmission delay, so a hold never races the stock's own creation.
+    # an explicit margin of at least one second (ADR 0027, ADR 0039). No periodic
+    # resubmission job exists yet, so this only covers an application restart replaying
+    # the event publication registry, not a publication stuck while the application
+    # keeps running (that relies on the alert of #13).
     sale-opening-margin: PT1H
   security:
     jwt:

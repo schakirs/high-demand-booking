@@ -11,8 +11,8 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.validation.autoconfigure.ValidationAutoConfiguration;
 
 /**
- * {@link EventProperties} must not let the application start without an explicit, strictly positive
- * {@code hdb.event.sale-opening-margin} (ADR 0027, ADR 0039). A minimal {@link
+ * {@link EventProperties} must not let the application start without an explicit {@code
+ * hdb.event.sale-opening-margin} of at least one second (ADR 0027, ADR 0039). A minimal {@link
  * ApplicationContextRunner} context, not a full {@code @SpringBootTest} with Testcontainers: no
  * database or web layer is involved in this rule.
  */
@@ -39,8 +39,8 @@ class EventPropertiesStartupTests {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"PT0S", "-PT1S"})
-  void failsToStartWithAZeroOrNegativeMargin(String margin) {
+  @ValueSource(strings = {"PT0S", "-PT1S", "PT0.5S"})
+  void failsToStartWithAZeroNegativeOrSubSecondMargin(String margin) {
     contextRunner
         .withPropertyValues("hdb.event.sale-opening-margin=" + margin)
         .run(context -> assertThat(context).hasFailed());
